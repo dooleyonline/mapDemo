@@ -118,8 +118,8 @@ export const PLACES: GeoJSON.FeatureCollection<GeoJSON.Point> = {
       id: 'woodruff-5',
       properties: { name: 'Woodruff Meetup Spot 5', desc: 'By the entrance to Lullwater Park', zone: 'woodruff' },         
       geometry: { type: 'Point', coordinates: [
-          -84.32145857410589,
-          33.79613202731056
+          -84.32150981443903,
+          33.796130508946476
         ] },
     },
     // MAIN
