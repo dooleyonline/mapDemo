@@ -26,7 +26,30 @@ export default function Map({
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const [selectedPoiName, setSelectedPoiName] = useState<string | null>(null);
+  const [selectedPoi, setSelectedPoi] = useState<{ name: string; desc?: string } | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setToast(null), 2500);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  function handleSelectSpot() {
+    if (!selectedPoi) {
+      showToast('Select a Meetup Spot first.');
+      return;
+    }
+    const { name, desc } = selectedPoi;
+    showToast(desc ? `Selected Spot: ${name} — ${desc}` : name);
+  }
 
   useEffect(() => {
     let cleanup = () => {};
@@ -201,7 +224,7 @@ export default function Map({
           const b = boundsFromPolygon(poly.coordinates as number[][][]);
           map.fitBounds(b, { padding: { top: 50, bottom: 50, left: 40, right: 40 }, duration: 800 });
 
-          setSelectedPoiName(null);
+          setSelectedPoi(null);
         });
 
         map.on('click', 'poi-circle', (e: any) => {
@@ -217,7 +240,7 @@ export default function Map({
           const [lng, lat] = (f.geometry as any).coordinates;
           const { name = 'Place', desc = '' } = f.properties || {};
 
-          setSelectedPoiName(String(name));
+          setSelectedPoi({ name: name as string, desc: desc as string });
 
           new (maplibre as any).Popup({ offset: 8, closeOnMove: true })
             .setLngLat([lng, lat])
@@ -238,7 +261,7 @@ export default function Map({
           const [lng, lat] = (f.geometry as any).coordinates;
           const { name = 'Accessible', desc = '' } = f.properties || {};
 
-          setSelectedPoiName(String(name));
+          setSelectedPoi({ name: name as string, desc: desc as string });
 
           new (maplibre as any).Popup({ offset: 8, closeOnMove: true })
             .setLngLat([lng, lat])
@@ -263,7 +286,7 @@ export default function Map({
             map.setFeatureState({ source: 'accessible', id: selectedAccId }, { selected: false });
             selectedAccId = null;
           }
-          setSelectedPoiName(null);
+          setSelectedPoi(null);
 
           map.easeTo({ center: initialCenter, zoom: initialZoom, duration: 600 });
         }
@@ -285,7 +308,7 @@ export default function Map({
 
             const button = document.createElement('button');
             button.type = 'button';
-            button.title = '전체보기';
+            button.title = 'Reset View';
             button.textContent = '⤢';
             button.style.fontSize = '16px';
             button.style.lineHeight = '20px';
@@ -304,7 +327,6 @@ export default function Map({
             this._map = undefined;
           }
 
-          // ✅ 여기 반환 타입을 ControlPosition으로
           getDefaultPosition(): ControlPosition {
             return 'top-left';
           }
@@ -332,7 +354,7 @@ export default function Map({
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 
-      {selectedPoiName && (
+      {selectedPoi && (
         <div
           style={{
             position: 'absolute',
@@ -341,19 +363,24 @@ export default function Map({
             transform: 'translateX(-50%)',
             backdropFilter: 'blur(8px)',
             background: 'rgba(255,255,255,0.65)',
-            padding: '8px 18px',
-            borderRadius: 999,
-            fontWeight: 700,
-            fontSize: 14,
-            color: '#111827',
+            padding: '10px 20px',
+            borderRadius: 16,
             boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
             border: '1px solid rgba(255,255,255,0.8)',
+            textAlign: 'center',
+            maxWidth: 300,
           }}
         >
-          {selectedPoiName}
+          <div style={{ fontWeight: 700, fontSize: 14, color: '#111827' }}>
+            {selectedPoi.name}
+          </div>
+          {selectedPoi.desc && (
+            <div style={{ fontSize: 12, color: '#374151', marginTop: 2 }}>
+              {selectedPoi.desc}
+            </div>
+          )}
         </div>
       )}
-
       <div
         style={{
           position: 'absolute',
@@ -390,6 +417,55 @@ export default function Map({
           </li>
         </ul>
       </div>
+      <button
+        onClick={handleSelectSpot}
+        style={{
+          position: 'absolute',
+          right: 12,
+          bottom: 40,
+          padding: '10px 16px',
+          borderRadius: 999,
+          background: '#111827',
+          color: '#fff',
+          fontWeight: 600,
+          fontSize: 13,
+          boxShadow: '0 8px 20px rgba(0,0,0,0.18)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          cursor: 'pointer',
+          opacity: selectedPoi ? 1 : 0.7,
+          pointerEvents: 'auto',
+          zIndex: 10,           
+        }}
+      >
+        Select This Spot
+      </button>
+
+      {toast && (
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            bottom: 24,
+            transform: 'translateX(-50%)',
+            background: 'rgba(17,24,39,0.92)',
+            color: '#fff',
+            padding: '10px 14px',
+            borderRadius: 10,
+            fontSize: 13,
+            fontWeight: 500,
+            boxShadow: '0 10px 24px rgba(0,0,0,0.25)',
+            maxWidth: 320,
+            textAlign: 'center',
+            lineHeight: 1.35,
+            border: '1px solid rgba(255,255,255,0.08)',
+            zIndex: 10,          
+          }}
+          role="status"          
+          aria-live="polite"
+        >
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
