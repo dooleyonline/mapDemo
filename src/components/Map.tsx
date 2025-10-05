@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import type { IControl, Map as MapLibreMap, ControlPosition } from 'maplibre-gl';
+
 
 type ZoneKey = 'main' | 'woodruff' | 'hospital' | 'clairmont';
 
@@ -266,29 +268,49 @@ export default function Map({
           map.easeTo({ center: initialCenter, zoom: initialZoom, duration: 600 });
         }
 
-        class ResetControl {
-          onAdd(map: any) {
+        class ResetControl implements IControl {
+          private _map?: MapLibreMap;
+          private _container!: HTMLElement;
+          private _onReset: () => void;
+
+          constructor(onReset: () => void) {
+            this._onReset = onReset;
+          }
+
+          onAdd(map: MapLibreMap): HTMLElement {
             this._map = map;
-            this._container = document.createElement('div');
-            this._container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+
+            const container = document.createElement('div');
+            container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+
             const button = document.createElement('button');
             button.type = 'button';
             button.title = '전체보기';
-            button.innerText = '⤢';
+            button.textContent = '⤢';
             button.style.fontSize = '16px';
             button.style.lineHeight = '20px';
             button.style.cursor = 'pointer';
-            button.onclick = resetView;
-            this._container.appendChild(button);
+            button.onclick = this._onReset;
+
+            container.appendChild(button);
+            this._container = container;
             return this._container;
           }
-          onRemove() {
-            this._container.parentNode.removeChild(this._container);
+
+          onRemove(): void {
+            if (this._container?.parentNode) {
+              this._container.parentNode.removeChild(this._container);
+            }
             this._map = undefined;
+          }
+
+          // ✅ 여기 반환 타입을 ControlPosition으로
+          getDefaultPosition(): ControlPosition {
+            return 'top-left';
           }
         }
 
-        map.addControl(new ResetControl(), 'top-left');
+        map.addControl(new ResetControl(resetView), 'top-left');
       });
 
       cleanup = () => map.remove();
