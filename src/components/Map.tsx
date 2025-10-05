@@ -35,7 +35,6 @@ export default function Map({
         style: `https://api.maptiler.com/maps/streets/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`,
         center: initialCenter,
         zoom: initialZoom,
-        attributionControl: true,
       });
 
       map.addControl(new maplibre.NavigationControl(), 'top-right');
