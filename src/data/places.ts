@@ -30,6 +30,15 @@ export const PLACES: GeoJSON.FeatureCollection<GeoJSON.Point> = {
           33.79685882054349
         ] },
     },
+    {
+      type: 'Feature',
+      id: 'clairmont-4',
+      properties: { name: 'Clairmont Meetup Spot 4', desc: 'Entrance to Candler Lake trail', zone: 'clairmont' },         
+      geometry: { type: 'Point', coordinates: [
+          -84.30904797382168,
+          33.80034863613318
+        ] },
+    },
     // Hospital
     {
       type: 'Feature',

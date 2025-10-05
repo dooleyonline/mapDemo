@@ -33,7 +33,7 @@ export default function Map({
   function showToast(msg: string) {
     setToast(msg);
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => setToast(null), 2500);
+    toastTimerRef.current = window.setTimeout(() => setToast(null), 3000);
   }
 
   useEffect(() => {
@@ -119,7 +119,7 @@ export default function Map({
         const placesRes = await fetch('/api/places', { cache: 'no-store' });
         const points = (await placesRes.json()) as GeoJSON.FeatureCollection<GeoJSON.Point>;
 
-        map.addSource('places', { type: 'geojson', data: points });
+        map.addSource('places', { type: 'geojson', data: points, generateId: true, });
 
         map.addLayer({
           id: 'poi-circle',
@@ -129,7 +129,7 @@ export default function Map({
           paint: {
             'circle-radius': [
               'case',
-              ['boolean', ['feature-state', 'selected'], false], 10, 7
+              ['boolean', ['feature-state', 'selected'], false], 11, 7
             ],
             'circle-color': [
               'case',
@@ -154,10 +154,14 @@ export default function Map({
         //   paint: { 'text-color': PALETTE.label },
         // });
 
+        map.setPaintProperty('poi-circle', 'circle-radius-transition', { duration: 5000, delay: 0 });
+        map.setPaintProperty('poi-circle', 'circle-color-transition',  { duration: 5000, delay: 0 });
+        map.setPaintProperty('poi-circle', 'circle-stroke-width-transition', { duration: 5000, delay: 0 });
+        
         const accPlacesRes = await fetch('/api/accPlaces', { cache: 'no-store' });
         const accPoints = (await accPlacesRes.json()) as GeoJSON.FeatureCollection<GeoJSON.Point>;
 
-        map.addSource('accessible', { type: 'geojson', data: accPoints });
+        map.addSource('accessible', { type: 'geojson', data: accPoints, generateId: true });
 
         map.addLayer({
           id: 'acc-poi-circle',
@@ -167,7 +171,7 @@ export default function Map({
           paint: {
             'circle-radius': [
               'case',
-              ['boolean', ['feature-state', 'selected'], false], 10, 7
+              ['boolean', ['feature-state', 'selected'], false], 11, 7
             ],
             'circle-color': [
               'case',
@@ -191,6 +195,10 @@ export default function Map({
         //   },
         //   paint: { 'text-color': PALETTE.label },
         // });
+        
+        map.setPaintProperty('acc-poi-circle', 'circle-radius-transition', { duration: 5000, delay: 0 });
+        map.setPaintProperty('acc-poi-circle', 'circle-color-transition',  { duration: 5000, delay: 0 });
+        map.setPaintProperty('acc-poi-circle', 'circle-stroke-width-transition', { duration: 5000, delay: 0 });
 
         const setPointer = (on = true) => (map.getCanvas().style.cursor = on ? 'pointer' : '');
         map.on('mouseenter', 'zones-fill', () => setPointer(true));
@@ -201,6 +209,8 @@ export default function Map({
         map.on('mouseleave', 'acc-poi-circle', () => setPointer(false));
 
         map.on('click', 'zones-fill', (e: any) => {
+          clearSelection();
+
           const f = e.features?.[0]; if (!f) return;
           const zone = (f.properties?.key || '') as ZoneKey;
 
@@ -228,6 +238,12 @@ export default function Map({
         });
 
         map.on('click', 'poi-circle', (e: any) => {
+          
+          if (selectedAccId) {
+            map.setFeatureState({ source: 'accessible', id: selectedAccId }, { selected: false });
+            selectedAccId = null;
+          }
+
           const f = e.features?.[0]; if (!f) return;
           const id = f.id as string;
 
@@ -249,6 +265,12 @@ export default function Map({
         });
 
         map.on('click', 'acc-poi-circle', (e: any) => {
+          
+          if (selectedPoiId) {
+            map.setFeatureState({ source: 'places', id: selectedPoiId }, { selected: false });
+            selectedPoiId = null;
+          }
+
           const f = e.features?.[0]; if (!f) return;
           const id = f.id as string;
 
@@ -267,6 +289,27 @@ export default function Map({
             .setLngLat([lng, lat])
             .setHTML(`<div style="font-size:14px"><strong>${name}</strong><br/>${desc}</div>`)
             .addTo(map);
+        });
+
+        function clearSelection() {
+          if (selectedPoiId) {
+            map.setFeatureState({ source: 'places', id: selectedPoiId }, { selected: false });
+            selectedPoiId = null;
+          }
+          if (selectedAccId) {
+            map.setFeatureState({ source: 'accessible', id: selectedAccId }, { selected: false });
+            selectedAccId = null;
+          }
+          setSelectedPoi(null); // 중앙 상단 배지도 지움
+        }
+
+        map.on('click', (e: any) => {
+          const hits = map.queryRenderedFeatures(e.point, {
+            layers: ['poi-circle', 'acc-poi-circle', 'zones-fill'],
+          });
+          if (!hits || hits.length === 0) {
+            clearSelection();
+          }
         });
 
         function resetView() {
