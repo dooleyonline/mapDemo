@@ -25,6 +25,22 @@ export default function Map({
   initialZoom?: number;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
+
+  function computeZoom(base: number) {
+    if (typeof window === 'undefined') return base;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const aspect = h / w;
+
+    let z = base;
+    if (aspect > 1.3) z -= 0.3;   
+    if (aspect > 1.6) z -= 0.6;   
+    if (aspect > 1.9) z -= 1.0;   
+    return Math.max(z, 13);       
+  }
+
+  const [effectiveZoom, setEffectiveZoom] = useState(() => computeZoom(initialZoom));
 
   const [selectedPoi, setSelectedPoi] = useState<{ name: string; desc?: string } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -59,9 +75,10 @@ export default function Map({
         container: containerRef.current!,
         style: `https://api.maptiler.com/maps/streets/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`,
         center: initialCenter,
-        zoom: initialZoom,
+        zoom: effectiveZoom,
       });
-
+      
+      mapRef.current = map; 
       map.addControl(new maplibre.NavigationControl(), 'top-right');
 
       let activeZone: ZoneKey | null = null;
@@ -331,7 +348,7 @@ export default function Map({
           }
           setSelectedPoi(null);
 
-          map.easeTo({ center: initialCenter, zoom: initialZoom, duration: 600 });
+          map.easeTo({ center: initialCenter, zoom: effectiveZoom, duration: 600 });
         }
 
         class ResetControl implements IControl {
@@ -378,11 +395,27 @@ export default function Map({
         map.addControl(new ResetControl(resetView), 'top-left');
       });
 
-      cleanup = () => map.remove();
+      cleanup = () => {
+        mapRef.current = null;
+        map.remove();
+      };
     })();
 
+
     return () => cleanup();
-  }, [initialCenter.toString(), initialZoom]);
+  }, [initialCenter.toString()]);
+
+  useEffect(() => {
+    function handleResize() {
+      const next = computeZoom(initialZoom);
+      setEffectiveZoom(next);
+      if (mapRef.current) {
+        mapRef.current.easeTo({ zoom: next, duration: 400 });
+      }
+    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [initialZoom]);
 
   return (
     <div
