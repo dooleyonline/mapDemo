@@ -61,7 +61,7 @@ export const PLACES: GeoJSON.FeatureCollection<GeoJSON.Point> = {
     {
       type: 'Feature',
       id: 'hospital-3',
-      properties: { name: 'Hospital Meetup Spot 3', desc: 'Behind Law School', zone: 'hospital' },         
+      properties: { name: 'Hospital Meetup Spot 3', desc: 'In front of Health Sciences Research Building II', zone: 'hospital' },         
       geometry: { type: 'Point', coordinates: [
           -84.31822462195069,
           33.79434304340329
@@ -70,7 +70,7 @@ export const PLACES: GeoJSON.FeatureCollection<GeoJSON.Point> = {
     {
       type: 'Feature',
       id: 'hospital-4',
-      properties: { name: 'Hospital Meetup Spot 4', desc: 'In front of Health Sciences Research Building II', zone: 'hospital' },         
+      properties: { name: 'Hospital Meetup Spot 4', desc: 'Behind Law School', zone: 'hospital' },         
       geometry: { type: 'Point', coordinates: [
           -84.31946318700648,
           33.78992911325254
