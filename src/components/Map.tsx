@@ -26,6 +26,31 @@ export default function Map({
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  const [effectiveZoom, setEffectiveZoom] = useState(initialZoom);
+
+    useEffect(() => {
+    function adjustZoomForAspect() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const aspect = h / w;
+
+      let zoom = initialZoom;
+
+      // 세로가 긴 경우(모바일, aspect가 크면 줌 낮춤)
+      if (aspect > 1.3) zoom -= 1.0;
+      if (aspect > 1.6) zoom -= 1.5; // 예: 아이폰 비율
+      if (aspect > 1.9) zoom -= 2.0; // 극세로(폴드폰 등)
+
+      // 너무 작게 되지 않도록 제한
+      zoom = Math.max(zoom, 10);
+      setEffectiveZoom(zoom);
+    }
+
+    adjustZoomForAspect();
+    window.addEventListener('resize', adjustZoomForAspect);
+    return () => window.removeEventListener('resize', adjustZoomForAspect);
+  }, [initialZoom]);
+
   const [selectedPoi, setSelectedPoi] = useState<{ name: string; desc?: string } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
@@ -59,7 +84,7 @@ export default function Map({
         container: containerRef.current!,
         style: `https://api.maptiler.com/maps/streets/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`,
         center: initialCenter,
-        zoom: initialZoom,
+        zoom: effectiveZoom,
       });
 
       map.addControl(new maplibre.NavigationControl(), 'top-right');
